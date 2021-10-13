@@ -14,9 +14,6 @@ library(tidyr)
 library(stringr)
 library(shinyWidgets)
 
-#lien google sheets
- #gs4_auth_configure(api_key = "insertkey")
- #gs4_deauth()
  
 drive_auth(path = "secret/clientsecret.json")
 gs4_auth(path = "secret/clientsecret.json")
