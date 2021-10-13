@@ -33,20 +33,20 @@ drive_auth(path = "secret/clientsecret.json")
 gs4_auth(path = "secret/clientsecret.json")
 
 
-datazu <- read_sheet("1WFewCMyHGIhMgSNVD6vfElNVoEvY_duGKipdkK97K0Q",sheet="Export")
+data_incubator <- read_sheet("1WFewCMyHGIhMgSNVD6vfElNVoEvY_duGKipdkK97K0Q",sheet="Export")
 dataprogs <- read_sheet("1WFewCMyHGIhMgSNVD6vfElNVoEvY_duGKipdkK97K0Q",sheet="Programmes")
 
 # nombre de programmes
 choixprog=unique(dataprogs$programme)
 
 #nbr candidatures totales brutes
-valeur1 <- datazu %>% 
+valeur1 <- data_incubator %>% 
   distinct(nom_projet,programme) %>% 
   summarize(total=n())%>% 
   pull()
 
 #nbr incubés total
-valeur2 <- datazu %>% 
+valeur2 <- data_incubator %>% 
   distinct(nom_startup,programme,statut) %>% 
   filter(statut=="accepted") %>% 
   summarize(total=n())%>% 
@@ -54,7 +54,7 @@ valeur2 <- datazu %>%
 
 #candidatures totales nettes
 valeur3 <- 
-  datazu %>% 
+  data_incubator %>% 
   distinct(nom_startup,totalapps) %>% 
   group_by(nom_startup) %>% 
   slice(which.max(totalapps)) %>% 
@@ -64,7 +64,7 @@ valeur3 <-
 
 #candidatures moyenne par compagnie
 valeur4 <- 
-  datazu %>% 
+  data_incubator %>% 
   distinct(nom_startup,totalapps) %>% 
   group_by(nom_startup) %>% 
   slice(which.max(totalapps)) %>% 
@@ -98,15 +98,15 @@ valueBox <- function(value, subtitle, icon, color) {
 }
 
 # Set up the application ui
-ui <- (navbarPage("Zu Stat",
+ui <- (navbarPage("Stats incubateur",
                    
 # define the tabs to be used in the app ----------------------------------------
 # introduction splash
 tabPanel("Intro",
-                h1("Zustat 0.1"),
+                h1("Stats incubateur 1.0"),
                 p("Cet outil fonctionne à partir de données compilées dans un ",
-                  span(tags$a(href="https://docs.google.com/spreadsheets/d/1_Abtl3UhlMCKvLt5xUj-oF_vtbii6Fl-hf8F16AF-FQ/edit?usp=sharing", "document Google Sheets."))
-                  ,"Il recense les candidatures depuis 2019."),
+                  span(tags$a(href="https://docs.google.com/spreadsheets/d/1WFewCMyHGIhMgSNVD6vfElNVoEvY_duGKipdkK97K0Q/edit?usp=sharing", "document Google Sheets."))
+                  ),
          br(),
          br(),
          fluidRow(
@@ -332,7 +332,7 @@ server <- function(input, output) {
 
   #jeu de données résumé des candidatures
   resume <- reactive ({
-    datazu %>% 
+    data_incubator %>% 
     distinct(nom_projet,programme,statut) %>% 
     left_join(.,dataprogs,by="programme") %>% 
     { if (!is.null(input$prog)) filter(.,programme %in% input$prog) else . } %>%
@@ -342,8 +342,8 @@ server <- function(input, output) {
   })
   
   #jeu de données filtré selon input
-  datazu2 <- reactive ({
-    datazu %>% 
+  data_incubator2 <- reactive ({
+    data_incubator %>% 
       { if (!is.null(input$prog)) filter(.,programme %in% input$prog) else . } %>% 
       { if (input$incub==TRUE) filter(., statut=="accepted") else . }
   })
@@ -379,8 +379,8 @@ server <- function(input, output) {
   
   #boîte candidatures de nouvelles compagnies
   output$texte1<- renderText({ 
-      datazu %>%
-      distinct(nom_startup,programme) %>%
+      data_incubator %>%
+      distinct(nom_startup,totalapps,programme) %>%
       { if (!is.null(input$prog)) filter(.,programme %in% input$prog) else . } %>%
       group_by(nom_startup) %>%
       slice(which.max(totalapps)) %>%
@@ -405,7 +405,7 @@ server <- function(input, output) {
 
   # délai entre création compte et candidature 
   output$texte4 <- renderText({ 
-    datazu %>%
+    data_incubator %>%
       distinct(nom_startup,totalapps,programme,datesoumission,date_creation_dossier) %>%
       { if (!is.null(input$prog)) filter(.,programme %in% input$prog) else . } %>%
       mutate(delai=difftime(strptime(datesoumission,format = "%Y-%m-%d"),strptime(date_creation_dossier, format = "%Y-%m-%d"),units="days")) %>% 
@@ -439,9 +439,9 @@ server <- function(input, output) {
   
   #graphique industrie
   output$plot2 <- renderPlot({
-    datazu2 <- datazu2()
+    data_incubator2 <- data_incubator2()
     
-    datazu2 %>% 
+    data_incubator2 %>% 
       distinct(nom_startup,programme,industrie) %>% 
       select(industrie) %>% 
       drop_na(industrie) %>% 
@@ -457,9 +457,9 @@ server <- function(input, output) {
   
   #graphique techno
   output$plot3 <- renderPlot({
-    datazu2 <- datazu2()
+    data_incubator2 <- data_incubator2()
     
-    datazu2 %>% 
+    data_incubator2 %>% 
       distinct(nom_startup,programme,techno1,techno2) %>% 
       select("techno1","techno2") %>% 
       unlist(recursive=FALSE) %>% as.character() %>% 
@@ -480,9 +480,9 @@ server <- function(input, output) {
   
   #graphique sexe H-F
   output$plot4 <- renderPlot({
-    datazu2 <- datazu2()
+    data_incubator2 <- data_incubator2()
     
-    datazu2 %>% 
+    data_incubator2 %>% 
       select(sexe) %>% 
       drop_na(sexe) %>% 
       group_by(sexe) %>% 
@@ -500,9 +500,9 @@ server <- function(input, output) {
   
   #graphique source candidature 2021-
   output$plot9 <- renderPlot({ 
-    datazu2 <- datazu2()
+    data_incubator2 <- data_incubator2()
     
-    datazu2 %>% 
+    data_incubator2 %>% 
       distinct(nom_startup,programme,source_candidature) %>% 
       select(source_candidature) %>% 
       drop_na(source_candidature) %>% 
@@ -518,8 +518,8 @@ server <- function(input, output) {
   
   #graphique provenance 1
   output$plot10 <- renderPlot({ 
-    datazu2 <- datazu2()
-    datazu2 %>% 
+    data_incubator2 <- data_incubator2()
+    data_incubator2 %>% 
       distinct(nom_startup,programme,subsource1) %>% 
       select(subsource1) %>% 
       drop_na(subsource1) %>% 
@@ -533,8 +533,8 @@ server <- function(input, output) {
   
   #graphique provenance2
   output$plot11 <- renderPlot({ 
-    datazu2 <- datazu2()
-    datazu2 %>% 
+    data_incubator2 <- data_incubator2()
+    data_incubator2 %>% 
       distinct(nom_startup,programme,subsource2) %>% 
       select(subsource2) %>% 
       drop_na(subsource2) %>% 
@@ -548,8 +548,8 @@ server <- function(input, output) {
   
   #graphique provenance3
   output$plot12 <- renderPlot({ 
-    datazu2 <- datazu2()
-    datazu2 %>% 
+    data_incubator2 <- data_incubator2()
+    data_incubator2 %>% 
       distinct(nom_startup,programme,subsource3) %>% 
       select(subsource3) %>% 
       drop_na(subsource3) %>% 
@@ -563,8 +563,8 @@ server <- function(input, output) {
   
   #graphique provenance4
   output$plot13 <- renderPlot({ 
-    datazu2 <- datazu2()
-    datazu2 %>% 
+    data_incubator2 <- data_incubator2()
+    data_incubator2 %>% 
       distinct(nom_startup,programme,subsource4) %>% 
       select(subsource4) %>% 
       drop_na(subsource4) %>% 
@@ -578,9 +578,9 @@ server <- function(input, output) {
   
   #graphique âge des candidats
   output$plot7 <- renderPlot({
-    datazu2 <- datazu2()
+    data_incubator2 <- data_incubator2()
     
-      datazu2%>% 
+      data_incubator2%>% 
       select(prenom,naissance) %>% 
       filter(!is.na(naissance)) %>% 
       group_by(naissance) %>% 
@@ -596,14 +596,14 @@ server <- function(input, output) {
   
   #graphique moment déposé
   output$plot6 <- renderPlot({
-    datazu2 <- datazu2()
+    data_incubator2 <- data_incubator2()
     
     datelimite <- 
       dataprogs %>% 
       { if (!is.null(input$prog)) filter(.,programme %in% input$prog) else . } %>%
       pull(datelimite) %>% as.Date 
     
-    datazu2 %>% 
+    data_incubator2 %>% 
       distinct(nom_projet,programme,datesoumission) %>% 
       mutate(moment=as.Date(datesoumission)) %>% 
       group_by(moment,programme) %>% 
@@ -626,12 +626,15 @@ server <- function(input, output) {
   
   #graphique dépôts cumulatifs
   output$plot8 <- renderPlot({
-    datazu2 <- datazu2()
     
-    datazu_limite <- 
-      full_join(datazu2, dataprogs, by ="programme")
+    data_incubator2 <- data_incubator2()
     
-    datazu_limite %>% 
+    data_incubator_limite <- 
+      full_join(data_incubator2, dataprogs, by ="programme")
+    
+    counting <- data_incubator2 %>% distinct(programme) %>% count() %>% pull()
+
+    data_incubator_limite %>% 
       distinct(nom_projet,programme,datesoumission,datelimite) %>% 
       mutate(delai=difftime(strptime(datesoumission,format = "%Y-%m-%d"),strptime(datelimite, format = "%Y-%m-%d"),units="weeks")) %>% 
       mutate(delai2=as.numeric(delai)) %>% 
@@ -645,7 +648,8 @@ server <- function(input, output) {
       ggplot(aes(x = delai2, y = pourcentage, colour = factor(programme),size=cumu)) + 
       geom_line(size = 1)+
       geom_point() +
-      geom_vline(xintercept=0,color="red")+
+      geom_vline(xintercept=0,color="red") +
+      #geom_vline(xintercept=0,color="red")+
       labs(title="",x="délai en semaines",y="pourcentage déposé")+
       theme_gdocs()+
       guides(size = FALSE)
@@ -658,7 +662,7 @@ server <- function(input, output) {
   output$datadisplay <- renderDT ({
     
     # datatable(hikedata2(), options=list(columnDefs = list(list(visible=FALSE, targets=c(8:18)))))
-    datatable(datazu2()[,c("nom_startup","programme","prenom","nomfamille","ville","naissance")])
+    datatable(data_incubator2()[,c("nom_startup","programme","prenom","nomfamille","ville","naissance")])
     
   })
   
