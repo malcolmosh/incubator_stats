@@ -33,8 +33,8 @@ drive_auth(path = "secret/clientsecret.json")
 gs4_auth(path = "secret/clientsecret.json")
 
 
-datazu <- read_sheet("1_Abtl3UhlMCKvLt5xUj-oF_vtbii6Fl-hf8F16AF-FQ",sheet="Export")
-dataprogs <- read_sheet("1_Abtl3UhlMCKvLt5xUj-oF_vtbii6Fl-hf8F16AF-FQ",sheet="progs")
+datazu <- read_sheet("1WFewCMyHGIhMgSNVD6vfElNVoEvY_duGKipdkK97K0Q",sheet="Export")
+dataprogs <- read_sheet("1WFewCMyHGIhMgSNVD6vfElNVoEvY_duGKipdkK97K0Q",sheet="progs")
 
 # nombre de programmes
 choixprog=unique(dataprogs$programme)
