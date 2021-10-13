@@ -34,20 +34,20 @@ gs4_auth(path = "secret/clientsecret.json")
 
 
 datazu <- read_sheet("1WFewCMyHGIhMgSNVD6vfElNVoEvY_duGKipdkK97K0Q",sheet="Export")
-dataprogs <- read_sheet("1WFewCMyHGIhMgSNVD6vfElNVoEvY_duGKipdkK97K0Q",sheet="progs")
+dataprogs <- read_sheet("1WFewCMyHGIhMgSNVD6vfElNVoEvY_duGKipdkK97K0Q",sheet="Programmes")
 
 # nombre de programmes
 choixprog=unique(dataprogs$programme)
 
 #nbr candidatures totales brutes
 valeur1 <- datazu %>% 
-  distinct(nomcompagnie,programme) %>% 
+  distinct(nom_projet,programme) %>% 
   summarize(total=n())%>% 
   pull()
 
 #nbr incubés total
 valeur2 <- datazu %>% 
-  distinct(nomcandidat,programme,statut) %>% 
+  distinct(nom_startup,programme,statut) %>% 
   filter(statut=="accepted") %>% 
   summarize(total=n())%>% 
   pull()
@@ -55,8 +55,8 @@ valeur2 <- datazu %>%
 #candidatures totales nettes
 valeur3 <- 
   datazu %>% 
-  distinct(nomcomplet,totalapps) %>% 
-  group_by(nomcomplet) %>% 
+  distinct(nom_startup,totalapps) %>% 
+  group_by(nom_startup) %>% 
   slice(which.max(totalapps)) %>% 
   ungroup() %>% 
   summarize(total2=n()) %>% 
@@ -65,8 +65,8 @@ valeur3 <-
 #candidatures moyenne par compagnie
 valeur4 <- 
   datazu %>% 
-  distinct(nomcomplet,totalapps) %>% 
-  group_by(nomcomplet) %>% 
+  distinct(nom_startup,totalapps) %>% 
+  group_by(nom_startup) %>% 
   slice(which.max(totalapps)) %>% 
   ungroup() %>% 
   summarize(total2=mean(totalapps)) %>% 
@@ -253,47 +253,42 @@ tabPanel("Source des candidatures",
          
          fluidRow(
            column(12,align="center",
-                  #graphique homme-femme
-                  h3("Source des candidatures"),
-                  h6("Pour les programmes 2019-2020. Les startups pouvaient sélectionner de multiples sources."),
-                  shinycssloaders::withSpinner(
-                    plotOutput("plot5", width=600, height = 350)),
                   
                   h3("Source des candidatures"),
-                  h6("Pour les programmes à partir de 2021. Les startups ne pouvaient choisir qu'une source"),
+                  h6("Les startups ne pouvaient choisir qu'une source"),
                   shinycssloaders::withSpinner(
-                    plotOutput("plot9", width=600, height = 350))
+                    plotOutput("plot9", width=600, height = 400))
                   
            )),
          
          fluidRow(
            box(
              title="Détails provenance Word of mouth",
-             h6("En nombres absolus. Pour programmes à partir de 2021."),
+             h6("En nombres absolus."),
              shinycssloaders::withSpinner(
-               plotOutput("plot10", height = 300))
+               plotOutput("plot10", height = 200))
            )
            
            ,box(
              title="Détails provenance social media",
-             h6("En nombres absolus. Pour programmes à partir de 2021."),
+             h6("En nombres absolus."),
              shinycssloaders::withSpinner(
-               plotOutput("plot11", height = 300))
+               plotOutput("plot11", height = 200))
            )),
          
          fluidRow(
            box(
-             title="Détails provenance Zu activity",
-             h6("En nombres absolus. Pour programmes à partir de 2021."),
+             title="Détails provenance incubator activity",
+             h6("En nombres absolus."),
              shinycssloaders::withSpinner(
-               plotOutput("plot12", height = 300))
+               plotOutput("plot12", height = 200))
            )
            
            ,box(
              title="Détails Provenance online source",
-             h6("En nombres absolus. Pour programmes à partir de 2021."),
+             h6("En nombres absolus."),
              shinycssloaders::withSpinner(
-               plotOutput("plot13", height = 300))
+               plotOutput("plot13", height = 200))
            ))
          
          ),
@@ -312,25 +307,16 @@ tabPanel("Fichier source",
 ),
 
 tabPanel("MAJ",
-         h3("20 mai 2021"),
+         h3("Étapes"),
          p(
            tags$ul(
-             tags$li("Remaniement des onglets supérieurs"),
-             tags$li("Nettoyage sources provenance 2021-"),
-             tags$li("Ajout graphique sources 2021-"),
-             tags$li("Correction noms des programmes"),
-             tags$li("Ajout graphiques sources détaillées 2021-"))),
+             tags$li("13 octobre 2021 : Upload sur github"))),
          
-         h3("Prochaines étapes à coder"),
+         h3("Améliorations potentielles"),
          p(
            tags$ul(
-             tags$li("Candidatures pré-2019"),
-             tags$li("Ajout des candidatures brouillon"),
-             tags$li("Division en fonction de la thèse d'investissement"),
-             tags$li("Ajout de la date d'ouverture des candidatures dans le graphique du temps"),
-             tags$li("Origine géographique"),
-             tags$li("Nuage de mots avec description"),
-             tags$li("Ajout de stats du portfolio")
+             tags$li("Ajout provenance pays"),
+             tags$li("Ajout analyse word cloud description des projets"),
            ),
            br(),
            p("Ce module a été codé en R à l'aide du package Shiny. OSH 2020-2021.")
@@ -347,7 +333,7 @@ server <- function(input, output) {
   #jeu de données résumé des candidatures
   resume <- reactive ({
     datazu %>% 
-    distinct(nomcompagnie,programme,statut) %>% 
+    distinct(nom_projet,programme,statut) %>% 
     left_join(.,dataprogs,by="programme") %>% 
     { if (!is.null(input$prog)) filter(.,programme %in% input$prog) else . } %>%
     { if (input$incub==TRUE) filter(., statut=="accepted") else . } %>%
@@ -394,9 +380,9 @@ server <- function(input, output) {
   #boîte candidatures de nouvelles compagnies
   output$texte1<- renderText({ 
       datazu %>%
-      distinct(nomcomplet,totalapps,programme) %>%
+      distinct(nom_startup,programme) %>%
       { if (!is.null(input$prog)) filter(.,programme %in% input$prog) else . } %>%
-      group_by(nomcomplet) %>%
+      group_by(nom_startup) %>%
       slice(which.max(totalapps)) %>%
       filter(totalapps==1) %>%
       ungroup() %>%
@@ -420,9 +406,9 @@ server <- function(input, output) {
   # délai entre création compte et candidature 
   output$texte4 <- renderText({ 
     datazu %>%
-      distinct(nomcomplet,totalapps,programme,datesoumission,datecreation) %>%
+      distinct(nom_startup,totalapps,programme,datesoumission,date_creation_dossier) %>%
       { if (!is.null(input$prog)) filter(.,programme %in% input$prog) else . } %>%
-      mutate(delai=difftime(strptime(datesoumission,format = "%Y-%m-%d"),strptime(datecreation, format = "%Y-%m-%d"),units="days")) %>% 
+      mutate(delai=difftime(strptime(datesoumission,format = "%Y-%m-%d"),strptime(date_creation_dossier, format = "%Y-%m-%d"),units="days")) %>% 
       group_by(programme) %>%
       summarize(moyenne=round(mean(delai))) %>% 
       summarize(moyennegen=as.character(round(mean(moyenne)))) %>% 
@@ -456,7 +442,7 @@ server <- function(input, output) {
     datazu2 <- datazu2()
     
     datazu2 %>% 
-      distinct(nomcomplet,programme,industrie) %>% 
+      distinct(nom_startup,programme,industrie) %>% 
       select(industrie) %>% 
       drop_na(industrie) %>% 
       group_by(industrie) %>% 
@@ -474,7 +460,7 @@ server <- function(input, output) {
     datazu2 <- datazu2()
     
     datazu2 %>% 
-      distinct(nomcomplet,programme,techno1,techno2) %>% 
+      distinct(nom_startup,programme,techno1,techno2) %>% 
       select("techno1","techno2") %>% 
       unlist(recursive=FALSE) %>% as.character() %>% 
       tibble %>% 
@@ -512,43 +498,19 @@ server <- function(input, output) {
     
   })
   
-  #graphique source candidature 2019-2020
-  output$plot5 <- renderPlot({
-    datazu2 <- datazu2()
-    
-    datazu2 %>% 
-      select("source1","source2","source3","source4","source5") %>% 
-      unlist(recursive=FALSE) %>% as.character() %>% 
-      tibble %>% 
-      set_colnames("source") %>% 
-      filter(!grepl("NULL",source)) %>% 
-      drop_na() %>% 
-      mutate(new=str_replace_all(source,"Facebook|Instagram|LinkedIn","Réseaux sociaux")) %>% 
-      group_by(new) %>% 
-      summarize(total=n()) %>% 
-      mutate(percent=(total/sum(total)*100)) %>% 
-      #arrange(desc(percent)) %>% 
-      ggplot(aes(x=percent,y=reorder(new,percent)))+
-      geom_col()+
-      geom_label(aes(label=round(percent)), hjust=0.5)+
-      labs(title="",x="Pourcentage",y="")+
-      theme_gdocs()
-  
-  })
-  
   #graphique source candidature 2021-
   output$plot9 <- renderPlot({ 
     datazu2 <- datazu2()
     
     datazu2 %>% 
-      distinct(nomcomplet,programme,newsource) %>% 
-      select(newsource) %>% 
-      drop_na(newsource) %>% 
-      group_by(newsource) %>% 
+      distinct(nom_startup,programme,source_candidature) %>% 
+      select(source_candidature) %>% 
+      drop_na(source_candidature) %>% 
+      group_by(source_candidature) %>% 
       summarize(total=n()) %>% 
       mutate(percent=(total/sum(total)*100)) %>% 
       filter(percent>1) %>% 
-      ggplot(aes(x=percent,y=reorder(newsource,percent)))+geom_col()+
+      ggplot(aes(x=percent,y=reorder(source_candidature,percent)))+geom_col()+
       geom_label(aes(label=round(percent)), hjust=0.5)+
       labs(title="",x="Pourcentage",y="")+
       theme_gdocs()
@@ -558,12 +520,12 @@ server <- function(input, output) {
   output$plot10 <- renderPlot({ 
     datazu2 <- datazu2()
     datazu2 %>% 
-      distinct(nomcomplet,programme,wordofmouth) %>% 
-      select(wordofmouth) %>% 
-      drop_na(wordofmouth) %>% 
-      group_by(wordofmouth) %>% 
+      distinct(nom_startup,programme,subsource1) %>% 
+      select(subsource1) %>% 
+      drop_na(subsource1) %>% 
+      group_by(subsource1) %>% 
       summarize(total=n()) %>%
-      ggplot(aes(x=total,y=reorder(wordofmouth,total)))+geom_col()+
+      ggplot(aes(x=total,y=reorder(subsource1,total)))+geom_col()+
       geom_label(aes(label=round(total)), hjust=0.5)+
       labs(title="",x="Nombre",y="")+
       theme_gdocs()
@@ -573,12 +535,12 @@ server <- function(input, output) {
   output$plot11 <- renderPlot({ 
     datazu2 <- datazu2()
     datazu2 %>% 
-      distinct(nomcomplet,programme,socialmedia) %>% 
-      select(socialmedia) %>% 
-      drop_na(socialmedia) %>% 
-      group_by(socialmedia) %>% 
+      distinct(nom_startup,programme,subsource2) %>% 
+      select(subsource2) %>% 
+      drop_na(subsource2) %>% 
+      group_by(subsource2) %>% 
       summarize(total=n()) %>%
-      ggplot(aes(x=total,y=reorder(socialmedia,total)))+geom_col()+
+      ggplot(aes(x=total,y=reorder(subsource2,total)))+geom_col()+
       geom_label(aes(label=round(total)), hjust=0.5)+
       labs(title="",x="Nombre",y="")+
       theme_gdocs()
@@ -588,12 +550,12 @@ server <- function(input, output) {
   output$plot12 <- renderPlot({ 
     datazu2 <- datazu2()
     datazu2 %>% 
-      distinct(nomcomplet,programme,zuactivity) %>% 
-      select(zuactivity) %>% 
-      drop_na(zuactivity) %>% 
-      group_by(zuactivity) %>% 
+      distinct(nom_startup,programme,subsource3) %>% 
+      select(subsource3) %>% 
+      drop_na(subsource3) %>% 
+      group_by(subsource3) %>% 
       summarize(total=n()) %>%
-      ggplot(aes(x=total,y=reorder(zuactivity,total)))+geom_col()+
+      ggplot(aes(x=total,y=reorder(subsource3,total)))+geom_col()+
       geom_label(aes(label=round(total)), hjust=0.5)+
       labs(title="",x="Nombre",y="")+
       theme_gdocs()
@@ -603,12 +565,12 @@ server <- function(input, output) {
   output$plot13 <- renderPlot({ 
     datazu2 <- datazu2()
     datazu2 %>% 
-      distinct(nomcomplet,programme,onlinesource) %>% 
-      select(onlinesource) %>% 
-      drop_na(onlinesource) %>% 
-      group_by(onlinesource) %>% 
+      distinct(nom_startup,programme,subsource4) %>% 
+      select(subsource4) %>% 
+      drop_na(subsource4) %>% 
+      group_by(subsource4) %>% 
       summarize(total=n()) %>%
-      ggplot(aes(x=total,y=reorder(onlinesource,total)))+geom_col()+
+      ggplot(aes(x=total,y=reorder(subsource4,total)))+geom_col()+
       geom_label(aes(label=round(total)), hjust=0.5)+
       labs(title="",x="Nombre",y="")+
       theme_gdocs()
@@ -619,7 +581,7 @@ server <- function(input, output) {
     datazu2 <- datazu2()
     
       datazu2%>% 
-      select(nomcomplet,naissance) %>% 
+      select(prenom,naissance) %>% 
       filter(!is.na(naissance)) %>% 
       group_by(naissance) %>% 
       summarize(total=n()) %>% 
@@ -642,7 +604,7 @@ server <- function(input, output) {
       pull(datelimite) %>% as.Date 
     
     datazu2 %>% 
-      distinct(nomcompagnie,programme,datesoumission) %>% 
+      distinct(nom_projet,programme,datesoumission) %>% 
       mutate(moment=as.Date(datesoumission)) %>% 
       group_by(moment,programme) %>% 
       summarize(total=n()) %>% 
@@ -670,7 +632,7 @@ server <- function(input, output) {
       full_join(datazu2, dataprogs, by ="programme")
     
     datazu_limite %>% 
-      distinct(nomcompagnie,programme,datesoumission,datelimite) %>% 
+      distinct(nom_projet,programme,datesoumission,datelimite) %>% 
       mutate(delai=difftime(strptime(datesoumission,format = "%Y-%m-%d"),strptime(datelimite, format = "%Y-%m-%d"),units="weeks")) %>% 
       mutate(delai2=as.numeric(delai)) %>% 
       group_by(delai2,programme) %>% 
@@ -696,7 +658,7 @@ server <- function(input, output) {
   output$datadisplay <- renderDT ({
     
     # datatable(hikedata2(), options=list(columnDefs = list(list(visible=FALSE, targets=c(8:18)))))
-    datatable(datazu2()[,c("nomcandidat","programme","prenom","nomfamille","ville","naissance")])
+    datatable(datazu2()[,c("nom_startup","programme","prenom","nomfamille","ville","naissance")])
     
   })
   
