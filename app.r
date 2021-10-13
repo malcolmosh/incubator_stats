@@ -14,19 +14,8 @@ library(tidyr)
 library(stringr)
 library(shinyWidgets)
 
-#Améliorations dans le code
-#use googlesheets4 api to prevent client error OK
-#dans plot8 retirer autres programmes
-#régler erreurs json
-#régler erreurs % offres acceptées seulement
-#rendertext to uioutput
-# isolate()
-#https://gargle.r-lib.org/articles/get-api-credentials.html
-#https://googlesheets4.tidyverse.org/articles/articles/auth.html
-#password input
-
 #lien google sheets
- #gs4_auth_configure(api_key = "AIzaSyAzH9wJtVYLlaClDx758cRvJhfsbvI8iYo")
+ #gs4_auth_configure(api_key = "insertkey")
  #gs4_deauth()
  
 drive_auth(path = "secret/clientsecret.json")
